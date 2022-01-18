@@ -21,33 +21,35 @@ namespace lsc {
 // recv flags acceptable for sockets
 enum ERecvFlags: int {
 	ERecv_none = 0,
-	ERecv_nowait = 0x40
-	// TODO: add the rest of the flags
+	ERecv_nowait = MSG_DONTWAIT
+	// TODO: add the recv_lent of the flags
 };
 
 // send flags acceptable for sockets
 enum ESendFlags: int {
 	ESend_none = 0,
-	ESend_nowait = 0x40
-	// TODO: add the rest of the flags
+	ESend_nowait = MSG_DONTWAIT
+	// TODO: add the recv_lent of the flags
 };
 
 // current status of the socket descriptor
 enum ESockStatus {
-	EStat_invalid		= 0b000000,
-	EStat_binded		= 0b000001,
-	EStat_connected		= 0b000010,
-	EStat_listening		= 0b000100,
-	EStat_closed		= 0b001000,
-	EStat_cloned		= 0b010000,
-	EStat_unknown		= 0b100000
+	EStat_invalid		= 0b0000000,
+	EStat_binded		= 0b0000001,
+	EStat_connected		= 0b0000010,
+	EStat_listening		= 0b0000100,
+	EStat_static		= 0b0001000,
+	EStat_closed		= 0b0010000,
+	EStat_cloned		= 0b0100000,
+	EStat_unknown		= 0b1000000
 
 };
 
-// generate an inet socket address using family, string and port
+// generate a lcsockaddr_in using :family:, :addr: and :port:
 lcsockaddr_in get_inet_addr(int family, std::string addr, int port);
 
 // basic low level socket class
+// has to be a purely inlined class because template bs
 template <int FAMILY, int TYPE, int PROTOCOL>
 class LScoket {
 public:
