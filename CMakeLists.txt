@@ -36,12 +36,13 @@ add_library(lazy_sockets STATIC
 	${lazy_sockets_src_platform}
 )
 
+# set(CMAKE_CXX_STANDARD 20)
 
 
-if (${PLATFORM_NAME} MATCHES "win")
+if (${LSC_PLATFORM_NAME} MATCHES "win")
     target_compile_options(lazy_sockets PRIVATE -W4 -WX)
 	target_compile_definitions(lazy_sockets PUBLIC WIN)
-elseif (${PLATFORM_NAME} MATCHES "unix")
+elseif (${LSC_PLATFORM_NAME} MATCHES "unix")
     target_compile_options(lazy_sockets PRIVATE -Wall -Wextra -pedantic -Werror)
 	target_compile_definitions(lazy_sockets PUBLIC LINUX)
 endif()
