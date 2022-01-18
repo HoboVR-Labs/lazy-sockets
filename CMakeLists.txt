@@ -11,23 +11,23 @@ endif()
 
 # Get platform.
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-  set(PLATFORM_NAME "unix")
+  set(LSC_PLATFORM_NAME "unix")
 
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  set(PLATFORM_NAME "unix") # cuz we lazy up in here
+  set(LSC_PLATFORM_NAME "unix") # cuz we lazy up in here
   message(WARNING "OSX version might not work")
 
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-  set(PLATFORM_NAME "win")
+  set(LSC_PLATFORM_NAME "win")
 
 endif()
 
-include_directories("src")
+# include_directories("src")
 
 file(GLOB lazy_sockets_src
 	"src/*.h"
 	"src/common.cpp"
-	"src/soc_${PLATFORM_NAME}.cpp"
+	"src/soc_${LSC_PLATFORM_NAME}.cpp"
 )
 
 # Add lib
