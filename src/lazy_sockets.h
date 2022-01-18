@@ -10,7 +10,10 @@
 #include "defines.h"  // types, macros, defines, etc.
 #include <string>
 #include <cstring>
+#include <errno.h>
 
+#include <thread>
+#include <functional>
 
 
 namespace lsc {
@@ -146,9 +149,19 @@ public:
 		return _soc_handle;
 	}
 
-	// returns the socket family, use this at your own risk!
+	// returns the socket family
 	inline static constexpr int GetFamily() {
 		return FAMILY;
+	}
+
+	// returns the socket type
+	inline static constexpr int GetType() {
+		return TYPE;
+	}
+
+	// returns the socket protocol
+	inline static constexpr int GetProtocol() {
+		return PROTOCOL;
 	}
 
 private:
@@ -156,20 +169,118 @@ private:
 	int _status;
 };
 
-// receives into :buff: until
-// either a :tag: is encountered or received more than :size:
-// returns number of bytes filled in :buff:
-template<int FAMILY, int TYPE, int PROTOCOL, typename T>
-int receive_until_tag(LScoket<FAMILY, TYPE, PROTOCOL> soc, char* buff, size_t size, T* tag);
+template<int FAM, int TYP, int PROTO, typename T>
+// requirecv_len std::invocable<CB&, void*, size_t>  // because compilers are a bitch i can't have concepts right now
+// has to be a purely inlined class because template bs
+class ThreadedRecvLoop {
+public:
+	inline ThreadedRecvLoop(
+		LSocket<FAM, TYP, PROTO>* soc,
+		T* tag,
+		std::function<void(void*, size_t)> callback,
+		size_t recv_buff_size = 256
+	) {
+		m_soc = soc;
+		m_callback = callback;
+		m_tag = tag;
+		m_buff_size = (int)recv_buff_size;
+		m_is_alive = false;
+	}
 
-// template<class Callback, typename >
-// class RecvLoop {
-// public:
-// 	RecvLoop(LScoket, Callback cb);
+	inline void Start() {
+		m_is_alive = true;
+		m_thread = std::make_unique<std::thread>(ThreadedRecvLoop::thread_enter, this);
+	}
 
-// private:
+	inline void Stop() {
+		m_is_alive = false;
+		m_thread->join();
+	}
 
-// };
+	inline void ReallocInternalBuffer(size_t new_size) {
+		m_buff_size = new_size;
+		m_realloc_buff = true;
+	}
+
+	inline size_t GetBufferSize() {
+		return m_buff_size;
+	}
+
+
+private:
+	inline static void thread_enter(ThreadedRecvLoop* self) {
+		self->thread_internal();
+	}
+
+	inline void thread_internal() {
+
+		char* recv_buff = new char[m_buff_size + sizeof(*m_tag)];
+		m_realloc_buff = false;
+		int recv_off = 0;
+		int recv_len;
+
+		while (m_is_alive) {
+
+			// check for a realloc call
+			if (m_realloc_buff){
+				recv_buff = (char*)realloc(recv_buff, m_buff_size + sizeof(*m_tag));
+				m_realloc_buff = false;
+			}
+
+			// check for too small of a buffer
+			if (m_buff_size - recv_off <= 0) {
+				m_buff_size += recv_off;
+				recv_buff = (char*)realloc(recv_buff, m_buff_size + sizeof(*m_tag));
+			}
+
+			// receive a partial message
+			recv_len = m_soc->Recv(recv_buff + recv_off, m_buff_size - recv_off);
+
+			// check for an error
+			if (recv_len < 0) {
+				break;
+			}
+
+			recv_off += recv_len;
+
+			// now look for a packet end tag
+			for (int i=0;  i < recv_off; i++) {
+				if (memcmp(recv_buff + i, m_tag, sizeof(*m_tag)) == 0) {
+					if (m_callback)
+						m_callback(recv_buff, i);
+
+					// after the packet was processed,
+					// we need to move the rest of the buffer
+					// to the begging to not lose any data
+					int off = i + sizeof(*m_tag);
+					if (m_buff_size - off > 0) {
+						memmove(recv_buff, recv_buff + off, m_buff_size - off);
+						memset(recv_buff + i, 0, m_buff_size - i);
+					}
+
+					recv_off = 0; // and zero off the offset
+					break;
+				}
+			}
+
+		}
+
+
+		delete[] recv_buff; // we're done, we can free the buffer
+	}
+
+private:
+	LSocket<FAM, TYP, PROTO>* m_soc;
+	std::function<void(void*, size_t)> m_callback;
+
+	const T* m_tag;
+
+	int m_buff_size;
+
+	std::unique_ptr<std::thread> m_thread;
+	bool m_is_alive;
+	bool m_realloc_buff; // sync buff alloc trigger
+};
 
 }  // namespace ls
 
