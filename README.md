@@ -19,6 +19,10 @@ cmake -DLSC_BUILD_TESTS=ON ..
 cmake --build .
 ```
 
+# TODO
+* Add more receive/send loops
+* Fix the windows version
+* Other daring new feature? :P
 
 # Examples
 ## echo server
