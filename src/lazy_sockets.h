@@ -22,14 +22,14 @@ namespace lsc {
 enum ERecvFlags: int {
 	ERecv_none = 0,
 	ERecv_nowait = MSG_DONTWAIT
-	// TODO: add the recv_lent of the flags
+	// TODO: add the rest of the flags
 };
 
 // send flags acceptable for sockets
 enum ESendFlags: int {
 	ESend_none = 0,
 	ESend_nowait = MSG_DONTWAIT
-	// TODO: add the recv_lent of the flags
+	// TODO: add the rest of the flags
 };
 
 // current status of the socket descriptor
@@ -51,24 +51,24 @@ lcsockaddr_in get_inet_addr(int family, std::string addr, int port);
 // basic low level socket class
 // has to be a purely inlined class because template bs
 template <int FAMILY, int TYPE, int PROTOCOL>
-class LScoket {
+class LSocket {
 public:
-	inline LScoket() {
+	inline LSocket() {
 		_status = EStat_invalid;
 		_soc_handle = socket(FAMILY, TYPE, PROTOCOL);
 	}
-	inline ~LScoket() {
+	inline ~LSocket() {
 		Close();
 	}
-	inline LScoket(const LScoket<FAMILY, TYPE, PROTOCOL>& other) {
+	inline LSocket(const LSocket<FAMILY, TYPE, PROTOCOL>&& other) {
 		_soc_handle = other.GetHandle();
 		_status = other.GetStatus() | EStat_cloned;
 	}
-	inline LScoket(lsocket_t other, ESockStatus status) {
+	inline LSocket(lsocket_t other, ESockStatus status) {
 		_soc_handle = other;
 		_status = status | EStat_cloned;
 	}
-	inline LScoket(lsocket_t other, int family) {
+	inline LSocket(lsocket_t other) {
 		_soc_handle = other;
 		_status = EStat_unknown | EStat_cloned;
 	}
@@ -78,19 +78,26 @@ public:
 
 
 	// claims an address
+	// returns 0 on success or -1 on error
 	inline int Bind(std::string addr, int port) {
 		return Bind(get_inet_addr(FAMILY, addr, port));
 	}
+	// returns 0 on success or -1 on error
 	inline int Bind(lcsockaddr_in addr) {
+		if (_status) {errno = EISCONN; return -1;}
 		_status = EStat_binded;
 		return bind(_soc_handle, (struct sockaddr*)&addr, sizeof(addr));
 	}  // if you like to do extra work
 
 	// connects to a claimed address
+	// returns 0 on success or -1 on error
 	inline int Connect(std::string addr, int port) {
 		return Connect(get_inet_addr(FAMILY, addr, port));
 	}
+
+	// returns 0 on success or -1 on error
 	inline int Connect(lcsockaddr_in addr)  {
+		if (_status) {errno = EISCONN; return -1;}
 		_status = EStat_connected;
 		return connect(_soc_handle, (struct sockaddr*)&addr, sizeof(addr));
 	}  // if you like to do extra work
@@ -98,31 +105,34 @@ public:
 	// static socket methods
 
 	// marks socket as static for accepting incoming connections
+	// returns 0 on success or -1 on error
 	inline int Listen(int backlog) {
+		_status = EStat_static;
 		return listen(_soc_handle, backlog);
 	}
 
 	// blocks until there is an incoming connection if the socket is static
-	// returns a socket descriptor
+	// returns a socket descriptor or -1 on error
 	inline lsocket_t Accept(
 		struct sockaddr *addr = nullptr,
-		socklen_t *addrlen = nullptr
+		socklen_t *addrlen = nullptr,
+		int flags = 0
 	) {
 		_status = EStat_listening;
-		return accept(_soc_handle, addr, addrlen);
+		return accept4(_soc_handle, addr, addrlen, flags);
 	}
 
 
 	// receive/send logic
 
 	// receives a :size: bytes into :buffer:
-	// returns the number of received bytes
+	// returns the number of received bytes or -1 on error
 	inline int Recv(void* buff, size_t size, ERecvFlags flags=ERecv_none) {
 		return recv(_soc_handle, buff, size, flags);
 	}
 
 	// sends a :size: bytes from :buffer:
-	// returns the number of sent bytes
+	// returns the number of sent bytes or -1 on error
 	inline int Send(const void* buff, size_t size, ESendFlags flags=ESend_none) {
 		return send(_soc_handle, buff, size, flags);
 	}
@@ -132,6 +142,7 @@ public:
 
 
 	// close currently open connection, returns error code
+	// returns 0 on success or -1 on error
 	inline int Close()  {
 		_status = EStat_closed;
 		return close(_soc_handle);
@@ -143,7 +154,7 @@ public:
 
 	// returns the current status of the socket
 	inline ESockStatus GetStatus() {
-		return _status;
+		return (ESockStatus)_status;
 	}
 
 	// returns the raw socket handle, use this at your own risk!
@@ -172,7 +183,7 @@ private:
 };
 
 template<int FAM, int TYP, int PROTO, typename T>
-// requirecv_len std::invocable<CB&, void*, size_t>  // because compilers are a bitch i can't have concepts right now
+// requires std::invocable<CB&, void*, size_t>  // because compilers are a bitch i can't have concepts right now
 // has to be a purely inlined class because template bs
 class ThreadedRecvLoop {
 public:
