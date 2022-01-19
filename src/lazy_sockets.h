@@ -200,6 +200,10 @@ public:
 		m_is_alive = false;
 	}
 
+	inline ~ThreadedRecvLoop() {
+		Stop();
+	}
+
 	inline void Start() {
 		m_is_alive = true;
 		m_thread = std::make_unique<std::thread>(ThreadedRecvLoop::thread_enter, this);
