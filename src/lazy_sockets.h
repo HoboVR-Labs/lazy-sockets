@@ -58,19 +58,20 @@ public:
 		_soc_handle = socket(FAMILY, TYPE, PROTOCOL);
 	}
 	inline ~LSocket() {
-		Close();
+		if (!(_status & EStat_cloned))  // if we're a clone, don't close
+			Close();
 	}
 	inline LSocket(const LSocket<FAMILY, TYPE, PROTOCOL>&& other) {
 		_soc_handle = other.GetHandle();
-		_status = other.GetStatus() | EStat_cloned;
+		_status = other.GetStatus() | EStat_cloned;  // if we're a copy, remember that
 	}
 	inline LSocket(lsocket_t other, ESockStatus status) {
 		_soc_handle = other;
-		_status = status | EStat_cloned;
+		_status = status;
 	}
 	inline LSocket(lsocket_t other) {
 		_soc_handle = other;
-		_status = EStat_unknown | EStat_cloned;
+		_status = EStat_unknown;
 	}
 
 
