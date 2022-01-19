@@ -209,6 +209,10 @@ public:
 		m_thread = std::make_unique<std::thread>(ThreadedRecvLoop::thread_enter, this);
 	}
 
+	inline bool IsAlive() {
+		return m_is_alive;
+	}
+
 	inline void Stop() {
 		m_is_alive = false;
 		m_thread->join();
