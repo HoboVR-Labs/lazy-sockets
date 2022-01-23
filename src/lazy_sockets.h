@@ -293,6 +293,92 @@ private:
 	bool m_realloc_buff; // sync buff alloc trigger
 };
 
+// same as ThreadedRecvLoop but all receive calls are non blocking
+template<int FAM, int TYP, int PROTO, typename T>
+class AsyncThreadedRecvLoop: public ThreadedRecvLoop {
+public:
+	AsyncThreadedRecvLoop(
+		LSocket<FAM, TYP, PROTO>* soc,
+		T* tag,
+		std::function<void(void*, size_t)> callback,
+		int32_t delay_qsec = 16670000,
+		size_t recv_buff_size = 256,
+	): ThreadedRecvLoop(soc, tag, callback, recv_buff_size), m_delay(delay_qsec) {}
+
+	inline void thread_internal() override {
+
+		char* recv_buff = new char[m_buff_size + sizeof(*m_tag)];
+		m_realloc_buff = false;
+		int recv_off = 0;
+		int recv_len;
+
+		while (m_is_alive) {
+
+			// check for a realloc call
+			if (m_realloc_buff) {
+				recv_buff = (char*)realloc(recv_buff, m_buff_size + sizeof(*m_tag));
+				m_realloc_buff = false;
+			}
+
+			// check for too small of a buffer
+			if (m_buff_size - recv_off <= 0) {
+				m_buff_size += recv_off;
+				recv_buff = (char*)realloc(recv_buff, m_buff_size + sizeof(*m_tag));
+			}
+
+			// receive a partial message
+			recv_len = m_soc->Recv(
+				recv_buff + recv_off,
+				m_buff_size - recv_off,
+				ERecv_nowait
+			);
+
+			// check for an error
+			if (recv_len < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno)
+				break;
+
+			// wait for data a bit
+			else if (recv_len < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+				std::this_thread::sleep_for(
+					std::chrono::nanosecoonds(m_delay)
+				);
+				// then jump to next, no need to check for data, there was none
+				continue;
+			}
+
+			recv_off += recv_len;
+
+			// now look for a packet end tag
+			for (int i=0;  i < recv_off; i++) {
+				if (memcmp(recv_buff + i, m_tag, sizeof(*m_tag)) == 0) {
+					if (m_callback)
+						m_callback(recv_buff, i);
+
+					// after the packet was processed,
+					// we need to move the rest of the buffer
+					// to the begging to not lose any data
+					int off = i + sizeof(*m_tag);
+					if (m_buff_size - off > 0) {
+						memmove(recv_buff, recv_buff + off, m_buff_size - off);
+						memset(recv_buff + i, 0, m_buff_size - i);
+					}
+
+					recv_off = 0; // and zero off the offset
+					break;
+				}
+			}
+
+		}
+
+
+		delete[] recv_buff; // we're done, we can free the buffer
+	}
+
+private:
+	int32_t m_delay;
+
+};
+
 }  // namespace ls
 
 #endif // #ifndef __LAZY_SOCKETS
