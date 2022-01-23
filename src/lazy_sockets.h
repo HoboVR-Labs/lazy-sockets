@@ -187,12 +187,8 @@ public:
 		T* tag,
 		std::function<void(void*, size_t)> callback,
 		size_t recv_buff_size = 256
-	) {
-		m_soc = soc;
-		m_callback = callback;
-		m_tag = tag;
+	): m_soc(soc), m_callback(callback), m_tag(tag) {
 		m_buff_size = (int)recv_buff_size;
-		m_is_alive = false;
 	}
 
 	inline ~ThreadedRecvLoop() {
@@ -210,7 +206,8 @@ public:
 
 	inline void Stop() {
 		m_is_alive = false;
-		m_thread->join();
+		if (m_thread)
+			m_thread->join();
 	}
 
 	inline void ReallocInternalBuffer(size_t new_size) {
@@ -231,7 +228,6 @@ private:
 	inline void thread_internal() {
 
 		char* recv_buff = new char[m_buff_size + sizeof(*m_tag)];
-		m_realloc_buff = false;
 		int recv_off = 0;
 		int recv_len;
 
@@ -281,7 +277,6 @@ private:
 
 		}
 
-
 		delete[] recv_buff; // we're done, we can free the buffer
 	}
 
@@ -293,7 +288,7 @@ private:
 
 	int m_buff_size;
 
-	std::unique_ptr<std::thread> m_thread;
+	std::unique_ptr<std::thread> m_thread = nullptr;
 	bool m_is_alive;
 	bool m_realloc_buff; // sync buff alloc trigger
 };
