@@ -125,7 +125,7 @@ public:
 	inline int Recv(void* buff, size_t size, ERecvFlags flags=ERecv_none) {
 		// compile time check for windows stupidity
 		#ifdef WIN
-		return recv(_soc_handle, (char*)buff, size, flags);
+		return recv(_soc_handle, (char*)buff, (int)size, flags);
 		#elif defined(LINUX)
 		return recv(_soc_handle, buff, size, flags);
 		#else
@@ -138,7 +138,7 @@ public:
 	inline int Send(const void* buff, size_t size, ESendFlags flags=ESend_none) {
 		// compile time check for windows stupidity
 		#ifdef WIN
-		return send(_soc_handle, (const char*)buff, size, flags);
+		return send(_soc_handle, (const char*)buff, (int)size, flags);
 		#elif defined(LINUX)
 		return send(_soc_handle, buff, size, flags);
 		#else
