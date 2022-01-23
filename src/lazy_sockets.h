@@ -309,15 +309,17 @@ private:
 
 // same as ThreadedRecvLoop but all receive calls are non blocking
 template<int FAM, int TYP, int PROTO, typename T>
-class AsyncThreadedRecvLoop: public ThreadedRecvLoop {
+class AsyncThreadedRecvLoop: public ThreadedRecvLoop<FAM, TYP, PROTO, T> {
 public:
 	AsyncThreadedRecvLoop(
 		LSocket<FAM, TYP, PROTO>* soc,
 		T* tag,
 		std::function<void(void*, size_t)> callback,
 		int32_t delay_qsec = 16670000,
-		size_t recv_buff_size = 256,
-	): ThreadedRecvLoop(soc, tag, callback, recv_buff_size), m_delay(delay_qsec) {}
+		size_t recv_buff_size = 256
+	): ThreadedRecvLoop(soc, tag, callback, recv_buff_size) {
+		m_delay = delay_qsec;
+	}
 
 	inline void thread_internal() override {
 
@@ -352,7 +354,7 @@ public:
 				break;
 
 			// wait for data a bit
-			else if (recv_len < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+			else if (recv_len <= 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
 				std::this_thread::sleep_for(
 					std::chrono::nanosecoonds(m_delay)
 				);
