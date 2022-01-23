@@ -225,7 +225,7 @@ public:
 	}
 
 	inline void ReallocInternalBuffer(size_t new_size) {
-		m_buff_size = new_size;
+		m_buff_size = (int)new_size;
 		m_realloc_buff = true;
 	}
 
