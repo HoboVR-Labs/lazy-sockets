@@ -54,7 +54,6 @@ template <int FAMILY, int TYPE, int PROTOCOL>
 class LSocket {
 public:
 	inline LSocket() {
-		_status = EStat_invalid;
 		_soc_handle = socket(FAMILY, TYPE, PROTOCOL);
 	}
 	inline ~LSocket() {
@@ -65,15 +64,10 @@ public:
 		_soc_handle = other.GetHandle();
 		_status = other.GetStatus() | EStat_cloned;  // if we're a copy, remember that
 	}
-	inline LSocket(lsocket_t other, ESockStatus status) {
-		_soc_handle = other;
-		_status = status;
-	}
-	inline LSocket(lsocket_t other) {
-		_soc_handle = other;
-		_status = EStat_unknown;
-	}
-
+	inline LSocket(
+		lsocket_t other,
+		ESockStatus status = EStat_unknown
+	): _soc_handle(other), _status(status) {}
 
 	// opening connection logic
 
@@ -180,12 +174,12 @@ public:
 
 private:
 	lsocket_t _soc_handle;
-	int _status;
+	int _status = EStat_invalid;
 };
 
+// has to be a purely inlined class because template bs
 template<int FAM, int TYP, int PROTO, typename T>
 // requires std::invocable<CB&, void*, size_t>  // because compilers are a bitch i can't have concepts right now
-// has to be a purely inlined class because template bs
 class ThreadedRecvLoop {
 public:
 	inline ThreadedRecvLoop(
