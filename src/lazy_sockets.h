@@ -54,7 +54,7 @@ template <int FAMILY, int TYPE, int PROTOCOL>
 class LSocket {
 public:
 	inline LSocket() {
-		_soc_handle = socket(FAMILY, TYPE, PROTOCOL);
+		_soc_handle = lsocket(FAMILY, TYPE, PROTOCOL);
 	}
 	inline ~LSocket() {
 		if (!(_status & EStat_cloned))  // if we're a clone, don't close
@@ -123,13 +123,27 @@ public:
 	// receives a :size: bytes into :buffer:
 	// returns the number of received bytes or -1 on error
 	inline int Recv(void* buff, size_t size, ERecvFlags flags=ERecv_none) {
+		// compile time check for windows stupidity
+		#ifdef WIN
+		return recv(_soc_handle, (char*)buff, size, flags);
+		#elif defined(LINUX)
 		return recv(_soc_handle, buff, size, flags);
+		#else
+		#error "unsupported platform"
+		#endif // #ifdef WIN
 	}
 
 	// sends a :size: bytes from :buffer:
 	// returns the number of sent bytes or -1 on error
 	inline int Send(const void* buff, size_t size, ESendFlags flags=ESend_none) {
+		// compile time check for windows stupidity
+		#ifdef WIN
+		return send(_soc_handle, (const char*)buff, size, flags);
+		#elif defined(LINUX)
 		return send(_soc_handle, buff, size, flags);
+		#else
+		#error "unsupported platform"
+		#endif // #ifdef WIN
 	}
 
 
