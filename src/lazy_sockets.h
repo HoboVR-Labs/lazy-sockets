@@ -45,6 +45,11 @@ enum ESockStatus {
 
 };
 
+// Accept error return
+enum EAcceptErrors {
+	EAccept_error = LSOCK_ERR,
+};
+
 // generate a lcsockaddr_in using :family:, :addr: and :port:
 lcsockaddr_in get_inet_addr(int family, std::string addr, int port);
 

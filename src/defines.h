@@ -22,6 +22,7 @@
 
 // pass through for the socket() call
 #define lsocket socket
+#define LSOCK_ERR -1
 
 namespace lsc {
 
@@ -44,6 +45,7 @@ typedef int lsocket_t;
 // cuz on windows you can't have nice things
 #define MSG_DONTWAIT 0
 #define socklen_t int
+#define LSOCK_ERR INVALID_SOCKET
 
 namespace lsc {
 
