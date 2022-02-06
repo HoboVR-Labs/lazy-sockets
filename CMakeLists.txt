@@ -26,7 +26,6 @@ endif()
 
 file(GLOB lazy_sockets_src
 	"src/*.h"
-	"src/common.cpp"
 	"src/soc_${LSC_PLATFORM_NAME}.cpp"
 )
 
