@@ -33,7 +33,7 @@ enum ESendFlags: int {
 };
 
 // current status of the socket descriptor
-enum ESockStatus {
+enum ESockStatus: int {
 	EStat_invalid		= 0b0000000,
 	EStat_binded		= 0b0000001,
 	EStat_connected		= 0b0000010,
@@ -51,35 +51,94 @@ enum EAcceptErrors {
 };
 
 // generate a lcsockaddr_in using :family:, :addr: and :port:
-lcsockaddr_in get_inet_addr(int family, std::string addr, int port);
+lcsockaddr_in get_inet_addr(int family, const std::string& addr, int port);
+
+
+////////////////////////////////////////////////////////////////////////////////
+// LSocket - main socket class
+////////////////////////////////////////////////////////////////////////////////
 
 // basic low level socket class
 // has to be a purely inlined class because template bs
 template <int FAMILY, int TYPE, int PROTOCOL>
 class LSocket {
+	lsocket_t _soc_handle;
+	int _status = EStat_invalid;
+
 public:
+	/////////////////////////////
+	// constructors/destructors
+	/////////////////////////////
+
+	// default constructor
 	inline LSocket() {
 		_soc_handle = lsocket(FAMILY, TYPE, PROTOCOL);
 	}
-	inline ~LSocket() {
-		if (!(_status & EStat_cloned))  // if we're a clone, don't close
-			Close();
-	}
-	inline LSocket(const LSocket<FAMILY, TYPE, PROTOCOL>&& other) {
-		_soc_handle = other.GetHandle();
-		_status = other.GetStatus() | EStat_cloned;  // if we're a copy, remember that
-	}
+
+	// from raw socket constructor
 	inline LSocket(
 		lsocket_t other,
 		ESockStatus status = EStat_unknown
 	): _soc_handle(other), _status(status) {}
 
+
+	// copy constructor
+	inline LSocket(const LSocket<FAMILY, TYPE, PROTOCOL>& other) {
+		_soc_handle = other._soc_handle;
+		_status = other._status | EStat_cloned;  // if we're a copy, remember that
+	}
+
+	// move constructor
+	inline LSocket(LSocket<FAMILY, TYPE, PROTOCOL>&& other) {
+		_soc_handle = other._soc_handle;
+		_status = other._status;  // if we're moved, no cloned flag
+	}
+
+	// destructor
+	inline ~LSocket() {
+		if (!(_status & EStat_cloned))  // if we're a clone, don't close
+			Close();
+	}
+
+	/////////////////////////////
+	// assign operators
+	/////////////////////////////
+
+
+	// copy assign
+	inline LSocket& operator=(const LSocket& other) {
+		if (&other != this) { // no self copies
+			// yeah we still move on a copy,
+			// but only because functionally the code is identical
+			*this = std::move(other);
+			// except that we mark as cloned at the end
+			_status |= EStat_cloned;
+		}
+		return *this;
+	}
+
+	// move assign
+	inline LSocket& operator=(LSocket&& other) {
+		if (&other != this) { // no self copies
+			// cleanup old fd before taking a new one
+			if (!(_status & EStat_cloned))  // if we're a clone, don't close
+				Close();
+
+			_status = std::move(other._status);
+			_soc_handle = std::move(other._soc_handle);
+		}
+		return *this;	
+	}
+
+
+	/////////////////////////////
 	// opening connection logic
+	/////////////////////////////
 
 
 	// claims an address
 	// returns 0 on success or -1 on error
-	inline int Bind(std::string addr, int port) {
+	inline int Bind(const std::string& addr, int port) {
 		return Bind(get_inet_addr(FAMILY, addr, port));
 	}
 	// returns 0 on success or -1 on error
@@ -91,7 +150,7 @@ public:
 
 	// connects to a claimed address
 	// returns 0 on success or -1 on error
-	inline int Connect(std::string addr, int port) {
+	inline int Connect(const std::string& addr, int port) {
 		return Connect(get_inet_addr(FAMILY, addr, port));
 	}
 
@@ -102,7 +161,10 @@ public:
 		return connect(_soc_handle, (struct sockaddr*)&addr, sizeof(addr));
 	}  // if you like to do extra work
 
+
+	/////////////////////////////
 	// static socket methods
+	/////////////////////////////
 
 	// marks socket as static for accepting incoming connections
 	// returns 0 on success or -1 on error
@@ -123,7 +185,9 @@ public:
 	}
 
 
+	/////////////////////////////
 	// receive/send logic
+	/////////////////////////////
 
 	// receives a :size: bytes into :buffer:
 	// returns the number of received bytes or -1 on error
@@ -152,7 +216,9 @@ public:
 	}
 
 
+	/////////////////////////////
 	// closing connection logic
+	/////////////////////////////
 
 
 	// close currently open connection, returns error code
@@ -163,7 +229,13 @@ public:
 	}
 
 
+	/////////////////////////////
 	// utility
+	/////////////////////////////
+
+	inline int Ioctl(unsigned long request, void* argp) {
+		return ioctl(_soc_handle, request, argp);
+	}
 
 
 	// returns the current status of the socket
@@ -191,24 +263,7 @@ public:
 		return PROTOCOL;
 	}
 
-private:
-	lsocket_t _soc_handle;
-	int _status = EStat_invalid;
-};
-
-// has to be a purely inlined class because template bs
-template<int FAM, int TYP, int PROTO, typename T>
-// requires std::invocable<CB&, void*, size_t>  // because compilers are a bitch i can't have concepts right now
-class ThreadedRecvLoop {
-public:
-	inline ThreadedRecvLoop(
-		LSocket<FAM, TYP, PROTO>* soc,
-		T* tag,
-		std::function<void(void*, size_t)> callback,
-		size_t recv_buff_size = 256
-	): m_soc(soc), m_callback(callback), m_tag(tag) {
-		m_buff_size = (int)recv_buff_size;
-	}
+}; // class LSocket {
 
 	inline ~ThreadedRecvLoop() {
 		Stop();
