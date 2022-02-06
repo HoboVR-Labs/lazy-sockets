@@ -7,7 +7,7 @@
 
 namespace lsc {
 
-lcsockaddr_in get_inet_addr(int family, std::string addr, int port) {
+lcsockaddr_in get_inet_addr(int family, const std::string& addr, int port) {
 	struct sockaddr_in serv_addr;
 
 	// filling out the bind address info
