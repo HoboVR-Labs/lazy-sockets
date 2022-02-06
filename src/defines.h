@@ -5,8 +5,8 @@
 #ifndef __LAZY_SOCKETS_DEFS
 #define __LAZY_SOCKETS_DEFS
 
-#define __LAZY_SOCKETS_VERSION "0.1.4"
-#define __LAZY_SOCKETS_BUILD 1642888800  // build date 2022 01 23
+#define __LAZY_SOCKETS_VERSION "0.2.1"
+#define __LAZY_SOCKETS_BUILD 1644098400  // build date 2022 02 06
 
 
 // platform defined types
