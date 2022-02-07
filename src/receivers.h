@@ -4,7 +4,6 @@
 // include parent header
 #include "lazy_sockets.h"
 
-using namespace lsc;
 
 ///////////////////////////////////////////////////////////////////////////////
 // ThreadedRecvLoop - a threaded receive loop, which will receive
