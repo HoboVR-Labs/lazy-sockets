@@ -5,8 +5,8 @@
 #ifndef __LAZY_SOCKETS_DEFS
 #define __LAZY_SOCKETS_DEFS
 
-#define __LAZY_SOCKETS_VERSION "0.2.1"
-#define __LAZY_SOCKETS_BUILD 1644098400  // build date 2022 02 06
+#define __LAZY_SOCKETS_VERSION "0.2.2"
+#define __LAZY_SOCKETS_BUILD 1644184800  // build date 2022 02 06
 
 
 // platform defined types
@@ -100,7 +100,7 @@ inline int close(lsocket_t soc) {
 
 
 // cuz windows wants to be special
-using ioctl = ioctlsocket;
+#define ioctl ioctlsocket
 
 
 }  // namespace lsc
