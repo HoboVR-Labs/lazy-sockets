@@ -14,6 +14,7 @@
 
 #include <thread>
 #include <functional>
+#include <memory>
 
 
 namespace lsc {
