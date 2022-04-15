@@ -77,14 +77,20 @@ private:
 
 			// check for a realloc call
 			if (m_realloc_buff){
-				recv_buff = (char*)realloc(recv_buff, m_buff_size + sizeof(m_tag));
+				char* temp = (char*)realloc(recv_buff, m_buff_size + sizeof(m_tag));
+				if (temp != recv_buff)
+					delete recv_buff;
+				recv_buff = temp;
 				m_realloc_buff = false;
 			}
 
 			// check for too small of a buffer
 			if (m_buff_size - recv_off <= 0) {
 				m_buff_size += recv_off;
-				recv_buff = (char*)realloc(recv_buff, m_buff_size + sizeof(m_tag));
+				char* temp = (char*)realloc(recv_buff, m_buff_size + sizeof(m_tag));
+				if (temp != recv_buff)
+					delete recv_buff;
+				recv_buff = temp;
 			}
 
 			// receive a partial message
