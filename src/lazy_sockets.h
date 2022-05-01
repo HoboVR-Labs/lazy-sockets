@@ -266,10 +266,10 @@ public:
 
 }; // class LSocket {
 
+}  // namespace lsc
+
 
 // include utility interfaces
 #include "receivers.h"
-
-}  // namespace lsc
 
 #endif // #ifndef __LAZY_SOCKETS

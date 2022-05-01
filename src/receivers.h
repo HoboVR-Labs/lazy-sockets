@@ -3,7 +3,9 @@
 
 // include parent header
 #include "lazy_sockets.h"
+#include <vector>
 
+namespace lsc {
 
 ///////////////////////////////////////////////////////////////////////////////
 // ThreadedRecvLoop - a threaded receive loop, which will receive
@@ -62,7 +64,8 @@ private:
 
 	inline void thread_internal() {
 
-		char* recv_buff = new char[m_buff_size + sizeof(m_tag)];
+		std::vector<char> recv_buff;
+		recv_buff.reserve(16);
 		int recv_off = 0;
 		int recv_len;
 
@@ -77,24 +80,18 @@ private:
 
 			// check for a realloc call
 			if (m_realloc_buff){
-				char* temp = (char*)realloc(recv_buff, m_buff_size + sizeof(m_tag));
-				if (temp != recv_buff)
-					delete recv_buff;
-				recv_buff = temp;
+				recv_buff.reserve(m_buff_size + sizeof(m_tag));
 				m_realloc_buff = false;
 			}
 
 			// check for too small of a buffer
 			if (m_buff_size - recv_off <= 0) {
 				m_buff_size += recv_off;
-				char* temp = (char*)realloc(recv_buff, m_buff_size + sizeof(m_tag));
-				if (temp != recv_buff)
-					delete recv_buff;
-				recv_buff = temp;
+				recv_buff.reserve(m_buff_size + sizeof(m_tag));
 			}
 
 			// receive a partial message
-			recv_len = m_soc->Recv(recv_buff + recv_off, m_buff_size - recv_off);
+			recv_len = m_soc->Recv(recv_buff.data() + recv_off, m_buff_size - recv_off);
 
 			// check for an error
 			if (recv_len < 0) {
@@ -105,17 +102,17 @@ private:
 
 			// now look for a packet end tag
 			for (int i=0;  i < recv_off; i++) {
-				if (memcmp(recv_buff + i, &m_tag, sizeof(m_tag)) == 0) {
+				if (memcmp(recv_buff.data() + i, &m_tag, sizeof(m_tag)) == 0) {
 					if (m_callback)
-						m_callback(recv_buff, i);
+						m_callback(recv_buff.data(), i);
 
 					// after the packet was processed,
 					// we need to move the rest of the buffer
 					// to the begging to not lose any data
 					int off = i + sizeof(m_tag);
 					if (m_buff_size - off > 0) {
-						memmove(recv_buff, recv_buff + off, m_buff_size - off);
-						memset(recv_buff + i, 0, m_buff_size - i);
+						memmove(recv_buff.data(), recv_buff.data() + off, m_buff_size - off);
+						memset(recv_buff.data() + i, 0, m_buff_size - i);
 					}
 
 					recv_off = 0; // and zero off the offset
@@ -124,8 +121,6 @@ private:
 			}
 
 		}
-
-		delete[] recv_buff; // we're done, we can free the buffer
 
 		// this can be used as a signal by other threads,
 		// so we need to reset it here
@@ -144,5 +139,7 @@ private:
 	bool m_is_alive;
 	bool m_realloc_buff; // sync buff alloc trigger
 }; // class ThreadedRecvLoop 
+
+} // namespace lsc
 
 #endif // #ifndef __LAZY_SOCKET_RECEIVERS
