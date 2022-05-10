@@ -5,9 +5,8 @@
 #ifndef __LAZY_SOCKETS_DEFS
 #define __LAZY_SOCKETS_DEFS
 
-#define __LAZY_SOCKETS_VERSION "0.2.3"
-#define __LAZY_SOCKETS_BUILD 1644444000  // build date 2022 02 10
-
+#define __LAZY_SOCKETS_VERSION "0.2.4"
+#define __LAZY_SOCKETS_BUILD 1650062080  // build date 2022 02 10
 
 // platform defined types
 #ifdef LINUX
@@ -21,6 +20,7 @@
 #include <errno.h>
 
 #include <arpa/inet.h>
+#include <string>
 
 namespace lsc {
 
@@ -35,6 +35,10 @@ typedef struct sockaddr_in lcsockaddr_in;
 
 typedef int lsocket_t;
 
+inline std::string getString(int err){
+	return std::strerror(err);
+}
+
 }  // namespace lsc
 
 #elif defined(WIN)
@@ -43,6 +47,7 @@ typedef int lsocket_t;
 #include <ws2tcpip.h>
 #include <stdio.h>
 #include <windows.h>
+#include <string>
 
 // Need to link with Ws2_32.lib
 #pragma comment(lib, "Ws2_32.lib")
@@ -96,6 +101,23 @@ inline int close(lsocket_t soc) {
 	}
 
 	return res;
+}
+
+inline std::string getString(int err){
+	wchar_t *s = NULL;
+	FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 
+				NULL, err,
+				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+				(LPWSTR)&s, 0, NULL);
+	std::wstring ws(s);
+	
+	//disabling loss of data warning. Conversion from unicode to ascii will always lose data.
+	#pragma warning( push )
+	#pragma warning( disable : 4244)
+	std::string str(ws.begin(), ws.end());
+	#pragma warning( pop ) 
+
+	return str;
 }
 
 
