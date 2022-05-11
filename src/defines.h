@@ -6,7 +6,7 @@
 #define __LAZY_SOCKETS_DEFS
 
 #define __LAZY_SOCKETS_VERSION "0.2.5"
-#define __LAZY_SOCKETS_BUILD 1652295486  // build date 2022 05 11
+#define __LAZY_SOCKETS_BUILD 1652295486  // build date 2022 05 11 (unixtimestamp.com)
 
 // platform defined types
 #ifdef LINUX
