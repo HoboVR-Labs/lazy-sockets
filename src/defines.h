@@ -21,6 +21,7 @@
 
 #include <arpa/inet.h>
 #include <cstring>
+#include <string>
 
 namespace lsc {
 
