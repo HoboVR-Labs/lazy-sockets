@@ -20,7 +20,7 @@
 #include <errno.h>
 
 #include <arpa/inet.h>
-#include <string>
+#include <cstring>
 
 namespace lsc {
 
