@@ -37,15 +37,20 @@ add_library(lazy_sockets STATIC
 
 # set(CMAKE_CXX_STANDARD 20)
 
-
+message(STATUS "Selecting compile options from platform: ${LSC_PLATFORM_NAME}")
 if (${LSC_PLATFORM_NAME} MATCHES "win")
+  if (MSVC)
     target_compile_options(lazy_sockets PRIVATE -W4 -WX)
-	target_compile_definitions(lazy_sockets PUBLIC WIN)
+  else()
+    target_compile_options(lazy_sockets PRIVATE -Wall -Wextra -pedantic -Werror)
+  endif()
+  target_compile_definitions(lazy_sockets PUBLIC WIN)
 elseif (${LSC_PLATFORM_NAME} MATCHES "unix")
     target_compile_options(lazy_sockets PRIVATE -Wall -Wextra -pedantic -Werror)
-	target_compile_definitions(lazy_sockets PUBLIC LINUX)
+  target_compile_definitions(lazy_sockets PUBLIC LINUX)
 endif()
 
 target_link_libraries(lazy_sockets
 	-lpthread
 )
+set_target_properties(lazy_sockets PROPERTIES LINKER_LANGUAGE CXX)

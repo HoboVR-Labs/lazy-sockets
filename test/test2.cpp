@@ -3,17 +3,14 @@
 // Copyright (C) 2020-2021 Oleg Vorobiov <oleg.vorobiov@hobovrlabs.org>
 
 
+#define NOMINMAX 
 #include <iostream>
 #include "lazy_sockets.h"
 #include <errno.h>
 
 #include <thread>
-
-#define ASSERT_RES(res) \
-	if ((res)) { \
-		throw std::runtime_error("assert on line: " + std::to_string(__LINE__) + ", reason: " + std::to_string(errno)); \
-	} \
-	else (void)0
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "doctest.h"
 
 using namespace lsc;
 
@@ -25,16 +22,16 @@ void server_echo(bool* echo_alive) {
 
 	// bind it
 	int res = binder.Bind("0.0.0.0", 6969);
-	ASSERT_RES(res);
+	std::cout<<res<<std::endl;
+	CHECK_MESSAGE(res==0, "Error:", getString(lerrno).c_str());
 
 
 	// make it a static listener
-	res = binder.Listen(1);
-	ASSERT_RES(res);
+	CHECK(binder.Listen(1)==0);
 
 	// and accept a single connection
 	res = binder.Accept();
-	ASSERT_RES(res < 0);
+	CHECK_MESSAGE(res >= 0, "Error:", getString(lerrno).c_str());
 
 	// convert that connection from a raw socket to an LScocket and profit
 	LSocket<AF_INET, SOCK_STREAM, 0> client(res, EStat_connected);
@@ -44,11 +41,11 @@ void server_echo(bool* echo_alive) {
 	while (*echo_alive) {
 		// receive data
 		res = client.Recv(buff, sizeof(buff));
-		ASSERT_RES(res < 0);
+		CHECK(res >= 0);
 
 		// re send what we received
 		res = client.Send(buff, res);
-		ASSERT_RES(res < 0);
+		CHECK(res >= 0);
 	}
 
 	// all socked will be closed on class instance destruction
@@ -77,7 +74,7 @@ void call_back(void* buff, size_t len) {
 
 
 
-int main() {
+TEST_CASE("Threaded send and receive") {
 	bool echo_alive = true;
 	std::thread echo_thread(server_echo, &echo_alive);
 
@@ -87,8 +84,7 @@ int main() {
 
 	auto client = std::make_shared<tcp_socket>();
 
-	int res = client->Connect("127.0.0.1", 6969);
-	ASSERT_RES(res);
+	CHECK(client->Connect("127.0.0.1", 6969)==0);
 
 	my_tag tag = {'\r', '\t', '\n', '\0'};
 
@@ -107,8 +103,8 @@ int main() {
 	// send loop
 
 	for (int i=0; i<10; i++) {
-		res = client->Send(msg, MSG_SIZE + sizeof(my_tag));
-		ASSERT_RES(res < 0);
+		int res = client->Send(msg, MSG_SIZE + sizeof(my_tag));
+		CHECK(res >= 0);
 	
 		std::this_thread::sleep_for(std::chrono::milliseconds(2)); // let the server setup first
 	}
@@ -117,8 +113,8 @@ int main() {
 	echo_alive = false;
 
 	// to unblock the recv wait in the server thread
-	res = client->Send(msg, MSG_SIZE + sizeof(my_tag));
-	ASSERT_RES(res < 0);
+	int res = client->Send(msg, MSG_SIZE + sizeof(my_tag));
+	CHECK(res >= 0);
 
 	// releasing ownership of the receiver socket shared_ptr
 	// will cause the receiver to exit it's thread
@@ -128,6 +124,4 @@ int main() {
 	echo_thread.join();
 
 	std::cout << "done\n";
-
-	return 0;
 }
