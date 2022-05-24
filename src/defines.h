@@ -49,6 +49,7 @@ inline std::string getString(int err){
 #include <stdio.h>
 #include <windows.h>
 #include <string>
+#include <atomic>
 
 // Need to link with Ws2_32.lib
 #pragma comment(lib, "Ws2_32.lib")
@@ -67,19 +68,17 @@ typedef struct sockaddr_in lcsockaddr_in;
 
 typedef SOCKET lsocket_t;
 
-static bool __wsa_initialized = false;
-static unsigned int  __wsa_initialized_count = 0;
+static std::atomic<unsigned int>  __wsa_initialized_count = 0;
 
 // cuz on windows sockets require wsaStartup, call WSACleanup() yourself later, idc
 inline lsocket_t lsocket(int family, int type, int protocol) {
-	if (!__wsa_initialized) {
+	if (!__wsa_initialized_count) {
 		WSADATA wsaData;
 		int res = WSAStartup(MAKEWORD(2, 2), &wsaData);
 		if (res != NO_ERROR) {
 			// errno = res;
 			return INVALID_SOCKET;
 		}
-		__wsa_initialized = true;
 	}
 	__wsa_initialized_count++;
 	return socket(family, type, protocol);
@@ -88,6 +87,7 @@ inline lsocket_t lsocket(int family, int type, int protocol) {
 // cuz on windows you can't have accept with flags
 inline lsocket_t accept4(lsocket_t soc, struct sockaddr* addr, socklen_t* addrlen, int flags) {
 	(void)flags;
+	__wsa_initialized_count++;
 	return accept(soc, addr, addrlen);
 }
 
@@ -98,7 +98,6 @@ inline int close(lsocket_t soc) {
 	// de init WSA on last socket close
 	if (!(--__wsa_initialized_count)) {
 		WSACleanup();
-		__wsa_initialized = false;
 	}
 
 	return res;

@@ -225,7 +225,7 @@ public:
 	// close currently open connection, returns error code
 	// returns 0 on success or -1 on error
 	inline int Close()  {
-		_status = EStat_closed;
+		_status |= EStat_closed;
 		return close(_soc_handle);
 	}
 
