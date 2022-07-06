@@ -26,6 +26,16 @@ add_executable(udp_test
 	test_udp.cpp doctest.h
 )
 
+# Test that the README code compilers, but don't actually run as tests.
+add_executable(readme_server
+	test_readme_server.cpp
+)
+
+add_executable(readme_client
+	test_readme_client.cpp
+)
+
+
 target_link_libraries(lsc_test
 	-lpthread
 	lazy_sockets
@@ -42,6 +52,16 @@ target_link_libraries(driver_socket_mock
 )
 
 target_link_libraries(udp_test
+	-lpthread
+	lazy_sockets
+)
+
+target_link_libraries(readme_server
+	-lpthread
+	lazy_sockets
+)
+
+target_link_libraries(readme_client
 	-lpthread
 	lazy_sockets
 )

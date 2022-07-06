@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(lazy_sockets)
 
-option(LSC_BUILD_TESTS "Build tests for lazy_sockets" ON)
+option(LSC_BUILD_TESTS "Build tests for lazy_sockets" OFF)
 
 if (LSC_BUILD_TESTS)
     enable_testing()
