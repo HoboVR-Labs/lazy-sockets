@@ -2,12 +2,6 @@
 #include "doctest.h"
 #include "lazy_sockets.h"
 
-#ifdef _WIN32
-#include <WinSock2.h>
-#else
-#include <sys/socket.h>
-#endif
-
 int send_udp() {
     std::cout <<"send_udp start." << '\n';
     auto addr = "127.0.0.1";
