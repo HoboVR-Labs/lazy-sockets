@@ -34,11 +34,16 @@ Simple single peer echo server.
 #include "lazy_sockets.h"
 #include <errno.h>
 
-using namespace lsc
+//Needed for AF_INET and other network defines:
+#ifdef _WIN32
+#include <WinSock2.h>
+#else
+#include <sys/socket.h>
+#endif
 
 int main() {
 	// lets create a socket
-	LScoket<AF_INET, SOCK_STREAM, 0> binder;
+    lsc::LSocket<AF_INET, SOCK_STREAM, 0> binder;
 
 	// bind it
 	int res = binder.Bind("0.0.0.0", 6969);
@@ -53,7 +58,7 @@ int main() {
 	if (res < 0) return -errno;
 
 	// convert that connection from a raw socket to an LScocket and profit
-	LScoket<AF_INET, SOCK_STREAM, 0> client(res, EStat_connected);
+	lsc::LSocket<AF_INET, SOCK_STREAM, 0> client(res, lsc::EStat_connected);
 
 	char buff[256]; // receive buffer
 

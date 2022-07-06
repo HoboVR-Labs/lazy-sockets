@@ -8,6 +8,16 @@
 #define __LAZY_SOCKETS_VERSION "0.2.5"
 #define __LAZY_SOCKETS_BUILD 1652295486  // build date 2022 05 11 (unixtimestamp.com)
 
+//Fix preprocesser system check and thus type checking and error checking before compiling in a lot of compilers:
+//https://stackoverflow.com/a/26225829
+#if !defined(WIN) && !defined(LINUX)
+#if !defined(WIN) && defined(_WIN64) || defined(_WIN32) || (defined(__CYGWIN__) && !defined(_WIN32))
+#define WIN
+#elif !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
+#define LINUX
+#endif
+#endif
+
 // platform defined types
 #ifdef LINUX
 

@@ -308,7 +308,7 @@ MockServerDriver_hobovr g_hobovrServerDriver;
 TEST_CASE("Driver socket comm mock") {
 	int res = g_hobovrServerDriver.Init();
 
-	CHECK_FALSE_MESSAGE(res != 0, "bad startup status: %d", res);
+	CHECK_FALSE_MESSAGE(res != 0, "bad startup status: ", res);
 
 	if (!res)
 		std::this_thread::sleep_for(std::chrono::seconds(30));
