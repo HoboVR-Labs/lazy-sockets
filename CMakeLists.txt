@@ -8,6 +8,7 @@ if (LSC_BUILD_TESTS)
     enable_testing()
     add_subdirectory(test)
 endif()
+unset(LSC_BUILD_TESTS CACHE)
 
 # Get platform.
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -54,3 +55,13 @@ target_link_libraries(lazy_sockets
 	-lpthread
 )
 set_target_properties(lazy_sockets PROPERTIES LINKER_LANGUAGE CXX)
+
+install(TARGETS lazy_sockets
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin)
+
+INSTALL (
+    DIRECTORY ${CMAKE_SOURCE_DIR}/src/
+    DESTINATION include/lazy_sockets
+    FILES_MATCHING PATTERN "*.h*")

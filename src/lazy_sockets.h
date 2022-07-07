@@ -203,6 +203,25 @@ public:
 		#endif // #ifdef WIN
 	}
 
+	// receives a :size: bytes into :buffer:
+	// returns the number of received bytes or -1 on error
+	inline int RecvFrom(void* buff, size_t size, lcsockaddr_in& sender, size_t& sender_size, ERecvFlags flags=ERecv_none) {
+		// compile time check for windows stupidity
+		#ifdef WIN
+		int send_size = sender_size; //use correct conversion, such as uint to int. 
+		int recv = recvfrom(_soc_handle, (char*)buff, (int)size, flags, (sockaddr *)&sender, &send_size);
+		sender_size = send_size;
+		return recv;
+		#elif defined(LINUX)
+        socklen_t send_size = sender_size;
+		int recv = recvfrom(_soc_handle, buff, size, flags, (sockaddr *)&sender, &send_size);
+        sender_size = send_size;
+        return recv;
+		#else
+		#error "unsupported platform"
+		#endif // #ifdef WIN
+	}
+
 	// sends a :size: bytes from :buffer:
 	// returns the number of sent bytes or -1 on error
 	inline int Send(const void* buff, size_t size, ESendFlags flags=ESend_none) {
@@ -211,6 +230,20 @@ public:
 		return send(_soc_handle, (const char*)buff, (int)size, flags);
 		#elif defined(LINUX)
 		return send(_soc_handle, buff, size, flags);
+		#else
+		#error "unsupported platform"
+		#endif // #ifdef WIN
+	}
+
+
+	// sends a :size: bytes from :buffer:
+	// returns the number of sent bytes or -1 on error
+    inline int SendTo(const void* buff, size_t size, lcsockaddr_in& dest_addr, size_t dest_size, ESendFlags flags=ESend_none) {
+		// compile time check for windows stupidity
+		#ifdef WIN
+		return sendto(_soc_handle, (const char*)buff, (int)size, flags, (sockaddr *)&dest_addr, dest_size);
+		#elif defined(LINUX)
+        return sendto(_soc_handle, buff, size, flags, (sockaddr *)&dest_addr, dest_size);
 		#else
 		#error "unsupported platform"
 		#endif // #ifdef WIN
