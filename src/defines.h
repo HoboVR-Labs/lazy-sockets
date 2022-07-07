@@ -5,8 +5,8 @@
 #ifndef __LAZY_SOCKETS_DEFS
 #define __LAZY_SOCKETS_DEFS
 
-#define __LAZY_SOCKETS_VERSION "0.2.5"
-#define __LAZY_SOCKETS_BUILD 1652295486  // build date 2022 05 11 (unixtimestamp.com)
+#define __LAZY_SOCKETS_VERSION "0.2.6"
+#define __LAZY_SOCKETS_BUILD 1657181398  // build date 2022 07 07 (unixtimestamp.com)
 
 //Fix preprocesser system check and thus type checking and error checking before compiling in a lot of compilers:
 //https://stackoverflow.com/a/26225829
